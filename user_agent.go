@@ -33,6 +33,7 @@ const (
 	DeviceTypeDesktop = "desktop"
 	DeviceTypeMobile  = "mobile"
 	DeviceTypeTablet  = "tablet"
+	DeviceTypeTV      = "tv"
 )
 
 // Bot is the value uasurfer-derived fields (DeviceType, Browser, Device)
@@ -155,6 +156,8 @@ func deviceTypeToString(dt uasurfer.DeviceType) string {
 		return DeviceTypeMobile
 	case uasurfer.DeviceTablet:
 		return DeviceTypeTablet
+	case uasurfer.DeviceTV:
+		return DeviceTypeTV
 	case uasurfer.DeviceUnknown:
 		return ""
 	default:
