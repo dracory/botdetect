@@ -93,7 +93,9 @@ botdetect.MaliciousPathPatterns() // malicious path patterns
   are excluded — they're malicious on some stacks, legitimate on others).
   Add your own stack-specific checks on top.
 - Data-center CIDR matching uses coarse published ranges; some ranges may
-  produce false positives on non-datacenter traffic.
+  produce false positives on non-datacenter traffic. See
+  [docs/maintaining-data.md](docs/maintaining-data.md) for how to update the
+  detection lists and refresh the CIDR ranges.
 
 ## License
 
