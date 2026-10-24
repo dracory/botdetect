@@ -3,12 +3,13 @@
 The detection lists live in `data_*.go` files, separate from the matching
 logic in `bot_filter.go`.
 
-| File                   | Contents                                  | Staleness risk |
-|------------------------|-------------------------------------------|----------------|
-| `data_user_agents.go`  | Broad and specific bot user-agent patterns | Medium         |
-| `data_referrers.go`    | Referrer spam domains                      | Medium         |
-| `data_paths.go`        | Bot and malicious path patterns            | Low            |
-| `data_ip_ranges.go`    | Data-center / cloud CIDR ranges            | High           |
+| File                   | Contents                                         | Staleness risk |
+|------------------------|--------------------------------------------------|----------------|
+| `data_bot_classes.go`  | Specific bot user-agent tokens, names, and classes | Medium       |
+| `data_user_agents.go`  | Broad word-boundary bot user-agent patterns      | Low            |
+| `data_referrers.go`    | Referrer spam domains                            | Medium         |
+| `data_paths.go`        | Bot and malicious path patterns                  | Low            |
+| `data_ip_ranges.go`    | Data-center / cloud CIDR ranges                  | High           |
 
 ## Rules for every list
 

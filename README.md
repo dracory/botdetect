@@ -18,6 +18,25 @@ import "github.com/dracory/botdetect"
 // CLI HTTP clients, scanners)
 botdetect.IsBot(r.UserAgent())
 
+// Richer verdict: identity + class for purpose-aware policy
+d := botdetect.Detect(r.UserAgent())
+// d.Bot   → true/false
+// d.Name  → "googlebot", "gptbot", "chatgpt-user", "sqlmap", ...
+// d.Class → ClassSearch | ClassSocial | ClassAI | ClassAIUser |
+//           ClassSEOTool | ClassMonitor | ClassScraper | ClassScanner | ClassOther
+
+// Same, from an *http.Request (nil-safe)
+botdetect.DetectRequest(r)
+
+// Structured bot detection with normalized identity and BotClass
+// (ClassSearch, ClassSocial, ClassAI, ClassAIUser, ClassSEOTool,
+// ClassMonitor, ClassScraper, ClassScanner, ClassOther)
+det := botdetect.Detect(r.UserAgent())
+// det.Bot   true
+// det.Name  "googlebot" | "gptbot" | "chatgpt-user" | "sqlmap" | ...
+// det.Class botdetect.ClassSearch | botdetect.ClassAI | ...
+det = botdetect.DetectRequest(r)
+
 // Bot-only file probes: robots.txt, ads.txt, sitemap.xml, llms.txt, ...
 botdetect.IsBotPath(r.URL.Path)
 

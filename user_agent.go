@@ -100,7 +100,7 @@ func ParseUserAgent(ua string) UserAgentInfo {
 	// Device type. A bot has no device — report DeviceType "bot" rather
 	// than the "desktop" uasurfer defaults it to, so device breakdowns
 	// don't count crawler traffic as computers.
-	if parsed.IsBot() || matchesUserAgentPatterns(strings.ToLower(ua)) {
+	if detectImpl(ua, strings.ToLower(ua), parsed).Bot {
 		info.DeviceType = Bot
 	} else {
 		info.DeviceType = deviceTypeToString(parsed.DeviceType)

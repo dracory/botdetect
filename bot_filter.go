@@ -5,8 +5,6 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
-
-	"github.com/LumenResearch/uasurfer"
 )
 
 // parsedDataCenterCIDRs is initialized from dataCenterCIDRs at package load.
@@ -33,38 +31,21 @@ func init() {
 // An empty user-agent returns false — a missing UA is not, by itself,
 // evidence of a bot.
 func IsBot(userAgent string) bool {
-	if userAgent == "" {
-		return false
-	}
-
-	if uasurfer.Parse(userAgent).IsBot() {
-		return true
-	}
-
-	return matchesUserAgentPatterns(strings.ToLower(userAgent))
+	return Detect(userAgent).Bot
 }
 
-// matchesUserAgentPatterns reports whether a lowercased user-agent matches
-// our own pattern lists: broad patterns (bot, crawler, spider, scraper,
-// slurp) with a word-boundary check to avoid false positives (e.g. "bot"
-// inside a non-bot word), and specific patterns (semrush, curl, googlebot,
-// etc.) as plain substrings.
-func matchesUserAgentPatterns(uaLower string) bool {
-	// Check broad patterns with word-boundary matching.
+// matchUserAgentPattern reports whether a lowercased user-agent matches our
+// broad word-boundary pattern list (bot, crawler, spider, scraper, slurp),
+// returning the matched pattern. Specific substring patterns are checked
+// earlier via botClassifications in detectImpl.
+func matchUserAgentPattern(uaLower string) (string, bool) {
 	for _, pattern := range botUserAgentBroadPatterns {
 		if matchWordBoundary(uaLower, pattern) {
-			return true
+			return pattern, true
 		}
 	}
 
-	// Check specific patterns with plain substring matching.
-	for _, pattern := range botUserAgentSpecificPatterns {
-		if strings.Contains(uaLower, pattern) {
-			return true
-		}
-	}
-
-	return false
+	return "", false
 }
 
 // BotPathPatterns returns the list of path substrings for bot-only files
