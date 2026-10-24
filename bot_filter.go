@@ -1,10 +1,25 @@
 package botdetect
 
 import (
+	"log/slog"
 	"net/netip"
 	"net/url"
 	"strings"
 )
+
+// parsedDataCenterCIDRs is initialized from dataCenterCIDRs at package load.
+var parsedDataCenterCIDRs []netip.Prefix
+
+func init() {
+	for _, cidr := range dataCenterCIDRs {
+		prefix, err := netip.ParsePrefix(cidr)
+		if err != nil {
+			slog.Error("botdetect: invalid datacenter CIDR in dataCenterCIDRs, skipping", "cidr", cidr, "error", err)
+			continue
+		}
+		parsedDataCenterCIDRs = append(parsedDataCenterCIDRs, prefix)
+	}
+}
 
 // == PUBLIC FUNCTIONS =========================================================
 

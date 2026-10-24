@@ -1,10 +1,5 @@
 package botdetect
 
-import (
-	"log/slog"
-	"net/netip"
-)
-
 // == DATA CENTER CIDR RANGES ==================================================
 
 // dataCenterCIDRs contains CIDR ranges commonly associated with cloud
@@ -280,9 +275,6 @@ var dataCenterCIDRs = []string{
 	// == IPv6 ranges ==
 	// AWS
 	"2600:1f00::/24",
-	"2600:1f01::/24",
-	"2600:1f02::/24",
-	"2600:1f03::/24",
 	// GCP
 	"2600:1900::/28",
 	// Azure
@@ -302,18 +294,4 @@ var dataCenterCIDRs = []string{
 	"2402:4e00::/32",
 	// Scaleway / Online.net
 	"2001:bc8::/32",
-}
-
-// parsedDataCenterCIDRs is initialized from dataCenterCIDRs at package load.
-var parsedDataCenterCIDRs []netip.Prefix
-
-func init() {
-	for _, cidr := range dataCenterCIDRs {
-		prefix, err := netip.ParsePrefix(cidr)
-		if err != nil {
-			slog.Error("botdetect: invalid datacenter CIDR in dataCenterCIDRs, skipping", "cidr", cidr, "error", err)
-			continue
-		}
-		parsedDataCenterCIDRs = append(parsedDataCenterCIDRs, prefix)
-	}
 }
