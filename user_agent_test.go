@@ -111,6 +111,22 @@ func TestParseUserAgent(t *testing.T) {
 			},
 		},
 		{
+			name: "Googlebot reports bot device type",
+			ua:   "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+			want: UserAgentInfo{
+				Browser:    "googlebot",
+				Os:         "bot",
+				DeviceType: "bot",
+			},
+		},
+		{
+			name: "Pattern-only bot reports bot device type",
+			ua:   "sqlmap/1.7",
+			want: UserAgentInfo{
+				DeviceType: "bot",
+			},
+		},
+		{
 			name: "Empty UA",
 			ua:   "",
 			want: UserAgentInfo{},

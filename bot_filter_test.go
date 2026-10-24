@@ -6,6 +6,22 @@ import (
 
 // == IsBot TESTS =============================================================
 
+func TestIsBot_UasurferNamedBots(t *testing.T) {
+	// Named crawler fleets only detected via uasurfer's IsBot() — these
+	// contain no "bot"-ish token our own patterns would match.
+	uas := []string{
+		"Mozilla/5.0 (compatible; GoogleOther/1.0; +http://www.google.com/bot.html)",
+		"Mozilla/5.0 (compatible; Mediapartners-Google/2.1)",
+		"Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)",
+		"Mozilla/5.0 (compatible; Google-InspectionTool/1.0)",
+	}
+	for _, ua := range uas {
+		if !IsBot(ua) {
+			t.Errorf("expected IsBot(%q) = true (uasurfer named bot), got false", ua)
+		}
+	}
+}
+
 func TestIsBot_DeviceBotUserAgents(t *testing.T) {
 	deviceBotUAs := []string{
 		"YandexBot",

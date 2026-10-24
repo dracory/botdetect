@@ -1,6 +1,6 @@
 # Proposal: delegate primary bot verdict to uasurfer's `IsBot()`
 
-Status: proposed
+Status: implemented
 Date: 2026-10-24
 Spike: `docs/spikes/uasurfer/README.md`
 

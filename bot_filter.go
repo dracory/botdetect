@@ -5,6 +5,8 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+
+	"github.com/LumenResearch/uasurfer"
 )
 
 // parsedDataCenterCIDRs is initialized from dataCenterCIDRs at package load.
@@ -23,31 +25,31 @@ func init() {
 
 // == PUBLIC FUNCTIONS =========================================================
 
-// IsBot checks whether a user-agent string matches known bot/crawler patterns
-// or is identified as a bot device by uasurfer parsing.
+// IsBot checks whether a user-agent string belongs to a bot, crawler, or
+// automated tool. The primary verdict comes from uasurfer's IsBot()
+// (conventional bot tokens, contact-URL convention, headless browsers,
+// named crawler fleets). Our own pattern lists then act as a supplementary
+// pass for scanners and crawlers uasurfer deliberately skips.
 // An empty user-agent returns false — a missing UA is not, by itself,
 // evidence of a bot.
-// Broad patterns (bot, crawler, spider, scraper, slurp) are matched with a
-// word-boundary check to avoid false positives (e.g. "bot" inside a non-bot
-// word). Specific patterns (semrush, curl, googlebot, etc.) are matched as
-// plain case-insensitive substrings.
 func IsBot(userAgent string) bool {
 	if userAgent == "" {
 		return false
 	}
 
-	uaInfo := ParseUserAgent(userAgent)
-	// Check all name fields — uasurfer sets DeviceType=bot and often
-	// Browser=bot for known bots; Device can only be a platform name
-	// today, but the check is kept defensively against parser changes.
-	if strings.EqualFold(uaInfo.DeviceType, Bot) ||
-		strings.EqualFold(uaInfo.Browser, Bot) ||
-		strings.EqualFold(uaInfo.Device, Bot) {
+	if uasurfer.Parse(userAgent).IsBot() {
 		return true
 	}
 
-	uaLower := strings.ToLower(userAgent)
+	return matchesUserAgentPatterns(strings.ToLower(userAgent))
+}
 
+// matchesUserAgentPatterns reports whether a lowercased user-agent matches
+// our own pattern lists: broad patterns (bot, crawler, spider, scraper,
+// slurp) with a word-boundary check to avoid false positives (e.g. "bot"
+// inside a non-bot word), and specific patterns (semrush, curl, googlebot,
+// etc.) as plain substrings.
+func matchesUserAgentPatterns(uaLower string) bool {
 	// Check broad patterns with word-boundary matching.
 	for _, pattern := range botUserAgentBroadPatterns {
 		if matchWordBoundary(uaLower, pattern) {
