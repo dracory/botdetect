@@ -69,30 +69,36 @@ All name fields are normalized to lowercase — compare against the exported
 constants (`botdetect.DeviceTypeMobile`, `botdetect.OsIOS`,
 `botdetect.BrowserEdge`, `botdetect.Bot`, ...).
 
-## Blocking middleware example
+## Blocking middleware
 
 ```go
-func botBlock(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if botdetect.IsMaliciousPath(r.URL.Path) {
-            http.Error(w, "forbidden", http.StatusForbidden)
-            return
-        }
-        if botdetect.IsBot(r.UserAgent()) {
-            http.Error(w, "forbidden", http.StatusForbidden)
-            return
-        }
-        next.ServeHTTP(w, r)
-    })
-}
+mux := http.NewServeMux()
+// ... routes
+
+handler := botdetect.Middleware(mux, botdetect.Options{
+    // Let search engines and human-initiated AI fetches through;
+    // block scanners, scrapers, and everything else detected.
+    AllowedClasses: map[botdetect.BotClass]bool{
+        botdetect.ClassSearch: true,
+        botdetect.ClassAIUser: true,
+    },
+    OnDetection: func(r *http.Request, d botdetect.Detection) {
+        log.Printf("bot: %s class=%s path=%s", d.Name, d.Class, r.URL.Path)
+    },
+})
+http.ListenAndServe(":8080", handler)
 ```
 
 Mount it early in the chain, before routing — bots then never reach your
-handlers or analytics.
+handlers or analytics. Details:
 
-> **Note:** blocking on `IsBot` also rejects legitimate crawlers
-> (Googlebot, Bingbot). If SEO matters, flag rather than block, or allowlist
-> known crawlers first.
+- Malicious paths (`.env`, `.git/`, `shell.php`, ...) are blocked regardless
+  of UA — disable via `DisableMaliciousPathBlock`.
+- `/robots.txt` is never blocked (RFC 9309: a 4xx robots.txt means "no
+  rules").
+- `ObserveOnly: true` detects + reports via `OnDetection` but never blocks —
+  good for a rollout phase.
+- `BlockResponse` customizes the rejection (default: 403 `Forbidden`).
 
 ## Pattern lists
 
