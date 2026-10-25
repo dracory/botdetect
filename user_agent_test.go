@@ -1,6 +1,9 @@
 package botdetect
 
-import "testing"
+import (
+	"net/http/httptest"
+	"testing"
+)
 
 func TestParseUserAgent(t *testing.T) {
 	tests := []struct {
@@ -140,5 +143,19 @@ func TestParseUserAgent(t *testing.T) {
 				t.Errorf("ParseUserAgent(%q)\n  got:  %+v\n  want: %+v", tt.ua, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestParseRequest(t *testing.T) {
+	if got := ParseRequest(nil); got != (UserAgentInfo{}) {
+		t.Errorf("ParseRequest(nil) = %+v, expected zero", got)
+	}
+	r := httptest.NewRequest("GET", "http://example.com/", nil)
+	r.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	r.Header.Set("Sec-CH-UA-Platform", `"Android"`)
+	r.Header.Set("Sec-CH-UA-Mobile", "?1")
+	got := ParseRequest(r)
+	if got.Browser != "chrome" {
+		t.Errorf("ParseRequest Browser = %q, expected chrome", got.Browser)
 	}
 }

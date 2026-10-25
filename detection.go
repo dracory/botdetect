@@ -88,6 +88,14 @@ func DetectRequest(r *http.Request) Detection {
 	return Detection{}
 }
 
+// IsBotRequest is the boolean shorthand for DetectRequest — reports
+// whether the request's User-Agent or any alternate UA-carrier header
+// identifies as a bot. Agent identity only: paths are not checked
+// (IsBotPath/IsMaliciousPath stay separate concerns).
+func IsBotRequest(r *http.Request) bool {
+	return DetectRequest(r).Bot
+}
+
 // detectImpl classifies a user-agent given its lowercase form and optional
 // pre-parsed uasurfer result (so callers that already parsed don't parse
 // twice, while Detect avoids parsing when botClassifications matches).

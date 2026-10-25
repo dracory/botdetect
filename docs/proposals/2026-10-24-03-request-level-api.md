@@ -1,6 +1,6 @@
 # Proposal: request-level detection APIs
 
-Status: proposed
+Status: implemented
 Date: 2026-10-24
 Spikes: `docs/spikes/crawler-detect-php/README.md`,
 `docs/spikes/uasurfer/README.md`, `docs/spikes/go-ua-parser/README.md`

@@ -2,6 +2,7 @@ package botdetect
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/LumenResearch/uasurfer"
@@ -59,8 +60,13 @@ func ParseUserAgent(ua string) UserAgentInfo {
 	if ua == "" {
 		return info
 	}
+	return parseUserAgentImpl(ua, uasurfer.Parse(ua))
+}
 
-	parsed := uasurfer.Parse(ua)
+// parseUserAgentImpl maps a parsed uasurfer result to UserAgentInfo —
+// shared by ParseUserAgent and ParseRequest (client hints).
+func parseUserAgentImpl(ua string, parsed *uasurfer.UserAgent) UserAgentInfo {
+	info := UserAgentInfo{}
 
 	// Browser — uasurfer lacks an Edge constant, so detect it from the
 	// tokens Edge (Chromium) includes in its UA string: "Edg/" on
@@ -107,6 +113,27 @@ func ParseUserAgent(ua string) UserAgentInfo {
 	}
 
 	return info
+}
+
+// ParseRequest parses a request's User-Agent plus Sec-CH-UA-* client hints
+// via uasurfer's ParseWithHints — better device-type and OS-version
+// accuracy on Chromium browsers where the consumer advertises Accept-CH.
+// Returns a zero UserAgentInfo if r is nil or the UA is empty.
+func ParseRequest(r *http.Request) UserAgentInfo {
+	if r == nil {
+		return UserAgentInfo{}
+	}
+	ua := r.UserAgent()
+	if ua == "" {
+		return UserAgentInfo{}
+	}
+	hints := &uasurfer.Hints{
+		Mobile:          r.Header.Get("Sec-CH-UA-Mobile"),
+		Platform:        r.Header.Get("Sec-CH-UA-Platform"),
+		PlatformVersion: r.Header.Get("Sec-CH-UA-Platform-Version"),
+		FormFactors:     r.Header.Get("Sec-CH-UA-Form-Factors"),
+	}
+	return parseUserAgentImpl(ua, uasurfer.ParseWithHints(ua, hints))
 }
 
 // tokenVersion extracts a "major.minor" version from the start of a UA

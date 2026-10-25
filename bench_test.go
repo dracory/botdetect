@@ -1,6 +1,9 @@
 package botdetect
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 var benchUAs = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -21,9 +24,14 @@ func BenchmarkIsBot(b *testing.B) {
 // real cost of the uasurfer parse + vendored regex pass is measured —
 // the IsBot benchmark above resolves to cache hits after warmup.
 func BenchmarkDetectCold(b *testing.B) {
+	lower := make([]string, len(benchUAs))
+	for i, ua := range benchUAs {
+		lower[i] = strings.ToLower(ua)
+	}
 	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ua := benchUAs[i%len(benchUAs)]
-		detectImpl(ua, ua, nil)
+		i2 := i % len(benchUAs)
+		detectImpl(benchUAs[i2], lower[i2], nil)
 	}
 }

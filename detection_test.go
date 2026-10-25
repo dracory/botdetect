@@ -144,3 +144,24 @@ func TestDetectRequest(t *testing.T) {
 		t.Errorf("DetectRequest(curl) = %+v, expected curl bot", got)
 	}
 }
+
+func TestIsBotRequest_AlternateUAHeader(t *testing.T) {
+	// Clean browser UA but a bot UA hidden in a carrier header.
+	r := httptest.NewRequest("GET", "http://example.com/", nil)
+	r.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	r.Header.Set("X-Device-User-Agent", "curl/8.6.0")
+	if !IsBotRequest(r) {
+		t.Error("IsBotRequest = false, expected true (bot UA in X-Device-User-Agent)")
+	}
+}
+
+func TestIsBotRequest_XScannerImmediate(t *testing.T) {
+	// Any non-empty X-Scanner header flags the request — no UA match needed.
+	r := httptest.NewRequest("GET", "http://example.com/", nil)
+	r.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	r.Header.Set("X-Scanner", "acme-probe/1.0")
+	got := DetectRequest(r)
+	if !got.Bot || got.Name != "x-scanner" || got.Class != ClassScanner {
+		t.Errorf("DetectRequest(X-Scanner) = %+v, expected scanner detection", got)
+	}
+}
