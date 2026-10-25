@@ -41,22 +41,51 @@ type Detection struct {
 // BrowserOpenAIBot), then uasurfer's IsBot() for named fleets and generic
 // heuristics, then our broad word-boundary pattern list for anything
 // unclassified.
+var uaCache = newDetectionCache()
+
 func Detect(userAgent string) Detection {
 	if userAgent == "" {
 		return Detection{}
 	}
-	return detectImpl(userAgent, strings.ToLower(userAgent), nil)
+	if d, ok := uaCache.get(userAgent); ok {
+		return d
+	}
+	d := detectImpl(userAgent, strings.ToLower(userAgent), nil)
+	uaCache.set(userAgent, d)
+	return d
 }
 
-// DetectRequest analyzes an *http.Request — currently its User-Agent —
-// and returns a Detection. Returns a zero Detection if r is nil.
-// Alternate UA-carrier headers (From, X-Scanner, ...) are added in a
-// follow-up once the vendored headers list lands.
+// DetectRequest analyzes an *http.Request: the User-Agent plus alternate
+// UA-carrier headers from the vendored list (X-Operamini-Phone-Ua,
+// X-Device-User-Agent, X-Original-User-Agent, From, X-Scanner, ...).
+// Returns a zero Detection if r is nil. A non-empty X-Scanner header is
+// an immediate match — scanners announce themselves there and the value
+// is not checked against patterns.
 func DetectRequest(r *http.Request) Detection {
 	if r == nil {
 		return Detection{}
 	}
-	return Detect(r.UserAgent())
+
+	if d := Detect(r.UserAgent()); d.Bot {
+		return d
+	}
+
+	for _, h := range uaCarrierHeaders {
+		v := r.Header.Get(h)
+		if v == "" {
+			continue
+		}
+		// X-Scanner is an announcement header — its mere presence flags
+		// the request as a scanner, per upstream Crawler-Detect semantics.
+		if strings.EqualFold(h, "X-Scanner") {
+			return Detection{Bot: true, Name: "x-scanner", Class: ClassScanner}
+		}
+		if d := Detect(v); d.Bot {
+			return d
+		}
+	}
+
+	return Detection{}
 }
 
 // detectImpl classifies a user-agent given its lowercase form and optional
@@ -82,6 +111,19 @@ func detectImpl(userAgent, uaLower string, parsed *uasurfer.UserAgent) Detection
 
 	if pattern, ok := matchUserAgentPattern(uaLower); ok {
 		return Detection{Bot: true, Name: pattern, Class: ClassOther}
+	}
+
+	// Vendored Crawler-Detect list last: exclusion pass strips browser/OS
+	// chrome tokens first, then the combined regex runs once on the
+	// remainder. An empty remainder means the UA was only browser
+	// boilerplate — not a bot.
+	if crawlersRegex != nil {
+		stripped := strings.TrimSpace(exclusionsRegex.ReplaceAllString(userAgent, ""))
+		if stripped != "" {
+			if m := crawlersRegex.FindString(stripped); m != "" {
+				return Detection{Bot: true, Name: strings.ToLower(m), Class: ClassOther}
+			}
+		}
 	}
 
 	return Detection{}

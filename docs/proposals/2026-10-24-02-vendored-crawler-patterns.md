@@ -1,6 +1,6 @@
 # Proposal: vendor Crawler-Detect raw pattern data
 
-Status: proposed
+Status: implemented
 Date: 2026-10-24
 Spikes: `docs/spikes/crawler-detect-php/README.md`,
 `docs/spikes/crawlerdetect/README.md`

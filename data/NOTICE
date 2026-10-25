@@ -1,0 +1,10 @@
+The JSON files in this directory are vendored from
+JayBizzle/Crawler-Detect (https://github.com/JayBizzle/Crawler-Detect),
+licensed under the MIT License.
+
+Files:
+  - crawlers.json   — bot/crawler user-agent regex patterns
+  - exclusions.json — false-positive exclusion patterns
+  - headers.json    — UA-carrier HTTP header names
+
+Refresh with: scripts/update-data.sh
