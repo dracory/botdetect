@@ -1,6 +1,6 @@
 # Proposal: Turnstile verifier subpackage
 
-Status: proposed
+Status: implemented
 Date: 2026-10-26
 
 ## Problem

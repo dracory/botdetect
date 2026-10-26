@@ -15,7 +15,7 @@ var benchUAs = []string{
 
 func BenchmarkIsBot(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		IsBot(benchUAs[i%len(benchUAs)])
 	}
 }
@@ -30,7 +30,7 @@ func BenchmarkDetectCold(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		i2 := i % len(benchUAs)
 		detectImpl(benchUAs[i2], lower[i2], nil)
 	}
