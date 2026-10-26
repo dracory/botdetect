@@ -87,6 +87,11 @@ func TestDetect_Classification(t *testing.T) {
 			want: Detection{Bot: true, Name: "keenablebot", Class: ClassAI},
 		},
 		{
+			name: "webshopok-kutatas is scraper",
+			ua:   "webshopok-kutatas/0.1 (+kapcsolat: test@datalistshop.eu; belso piackutatas, .com webshopok)",
+			want: Detection{Bot: true, Name: "webshopok-kutatas", Class: ClassScraper},
+		},
+		{
 			name: "Yahoo Slurp is search",
 			ua:   "Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)",
 			want: Detection{Bot: true, Name: "yahoobot", Class: ClassSearch},
