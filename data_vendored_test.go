@@ -1,6 +1,8 @@
 package botdetect
 
 import (
+	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -50,6 +52,39 @@ func TestDetect_VendoredNoFalsePositives(t *testing.T) {
 	for _, ua := range uas {
 		if IsBot(ua) {
 			t.Errorf("expected IsBot(%q) = false (real browser), got true", ua)
+		}
+	}
+}
+
+// PHP-flavored patterns that RE2 can't express directly (trailing literal
+// negative lookaheads) must be rewritten, not skipped — skipping loses real
+// detections like YandexBot.
+func TestCompileAlternation_NegativeLookahead(t *testing.T) {
+	re := compileAlternation([]string{`Yandex(?!Search)`})
+	if re == nil {
+		t.Fatal("compileAlternation returned nil for Yandex(?!Search)")
+	}
+	if !re.MatchString("Mozilla/5.0 (compatible; YandexBot/3.0)") {
+		t.Error("expected YandexBot UA to match")
+	}
+	if re.MatchString("YandexSearch/5.0") {
+		t.Error("expected YandexSearch UA NOT to match — (?!Search) exclusion lost")
+	}
+}
+
+// Every vendored pattern must compile — a skip means silently lost coverage.
+func TestVendoredData_NoSkippedPatterns(t *testing.T) {
+	var crawlers, exclusions []string
+	if err := json.Unmarshal(crawlersJSON, &crawlers); err != nil {
+		t.Fatalf("unmarshal crawlers.json: %v", err)
+	}
+	if err := json.Unmarshal(exclusionsJSON, &exclusions); err != nil {
+		t.Fatalf("unmarshal exclusions.json: %v", err)
+	}
+	for _, p := range append(crawlers, exclusions...) {
+		p = strings.ReplaceAll(p, `\/`, "/")
+		if _, err := regexp.Compile("(?i)" + sanitizePattern(p)); err != nil {
+			t.Errorf("pattern %q failed to compile after sanitize: %v", p, err)
 		}
 	}
 }
