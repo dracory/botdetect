@@ -140,4 +140,5 @@ var botClassifications = []struct {
 	{"insomnia", "insomnia", ClassScraper},
 	{"feedly", "feedly", ClassScraper},
 	{"nutch", "nutch", ClassScraper},
+	{"webshopok-kutatas", "webshopok-kutatas", ClassScraper},
 }
