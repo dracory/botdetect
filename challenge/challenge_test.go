@@ -76,7 +76,15 @@ func TestVerifyRejectsTamperedToken(t *testing.T) {
 	if testConfig.Verify(r, strings.Join(parts, "."), counter) {
 		t.Error("tampered difficulty accepted")
 	}
-	if testConfig.Verify(r, token[:len(token)-1]+"0", counter) {
+	// Flip the last signature char to a different value — a fixed "0"
+	// flakes whenever the signature already ends in it (~1/16 of runs).
+	tampered := token[:len(token)-1]
+	if token[len(token)-1] == '0' {
+		tampered += "1"
+	} else {
+		tampered += "0"
+	}
+	if testConfig.Verify(r, tampered, counter) {
 		t.Error("tampered signature accepted")
 	}
 	if testConfig.Verify(r, "not-a-token", "0") {
