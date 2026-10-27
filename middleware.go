@@ -31,8 +31,11 @@ type Options struct {
 	// ExcludePaths bypasses every check — detection, blocking, and
 	// jails — for matching request paths. A trailing '*' means prefix
 	// match; otherwise the pattern is segment-aware (exact path or
-	// subpath). Use it for bearer-authed machine endpoints and assets
-	// that must keep working for visitors on a jailed shared IP.
+	// subpath). Matching is case-sensitive and exact by design —
+	// exclusions are explicit opt-outs, not fingerprints (unlike
+	// PathBlocklist, which is matched case-insensitively).
+	// Use it for bearer-authed machine endpoints and assets that must
+	// keep working for visitors on a jailed shared IP.
 	ExcludePaths []string
 
 	// JailDuration > 0 enables IP jailing: after any block decision the
@@ -141,11 +144,8 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 				opts.OnDetection(r, d)
 			}
 			if !opts.ObserveOnly {
-				if jail != nil {
-					jail.jail(ip)
-					if opts.OnJail != nil {
-						opts.OnJail(ip, r, d)
-					}
+				if jail != nil && jail.jail(ip) && opts.OnJail != nil {
+					opts.OnJail(ip, r, d)
 				}
 				block(w, r)
 				return
@@ -159,11 +159,8 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 			}
 			allowed := opts.AllowedClasses[d.Class]
 			if !allowed && !opts.ObserveOnly {
-				if jail != nil {
-					jail.jail(ip)
-					if opts.OnJail != nil {
-						opts.OnJail(ip, r, d)
-					}
+				if jail != nil && jail.jail(ip) && opts.OnJail != nil {
+					opts.OnJail(ip, r, d)
 				}
 				block(w, r)
 				return

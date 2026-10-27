@@ -41,9 +41,12 @@ func (s *jailStore) jailed(ip string) bool {
 	return true
 }
 
-// jail marks ip as jailed for the store's TTL. Re-jailing an already
-// jailed IP extends the term from now.
-func (s *jailStore) jail(ip string) {
+// jail marks ip as jailed for the store's TTL and reports whether the
+// term is new — true on first jailing or after expiry, false when the
+// IP was already serving a term. Callers use the bool to fire hooks
+// like Options.OnJail exactly once per term; concurrent requests from
+// the same IP can't double-report.
+func (s *jailStore) jail(ip string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if len(s.entries) >= jailStoreSize {
@@ -57,5 +60,8 @@ func (s *jailStore) jail(ip string) {
 			clear(s.entries)
 		}
 	}
+	until, ok := s.entries[ip]
+	fresh := !ok || time.Now().After(until)
 	s.entries[ip] = time.Now().Add(s.ttl)
+	return fresh
 }

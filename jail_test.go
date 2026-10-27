@@ -34,6 +34,21 @@ func TestJailStore_RejailExtends(t *testing.T) {
 	}
 }
 
+func TestJailStore_JailReportsFreshTerm(t *testing.T) {
+	s := newJailStore(30 * time.Millisecond)
+	ip := "10.0.0.2"
+	if !s.jail(ip) {
+		t.Fatal("first jail should report a fresh term")
+	}
+	if s.jail(ip) {
+		t.Fatal("re-jail during an active term must report false")
+	}
+	time.Sleep(50 * time.Millisecond)
+	if !s.jail(ip) {
+		t.Fatal("jail after expiry should report a fresh term")
+	}
+}
+
 func TestMiddleware_JailsBlockedIP(t *testing.T) {
 	code := 0
 	var detections []Detection
