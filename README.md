@@ -82,8 +82,16 @@ handler := botdetect.Middleware(mux, botdetect.Options{
         botdetect.ClassSearch: true,
         botdetect.ClassAIUser: true,
     },
+    // Jail repeat offenders for 5 minutes — after any block decision
+    // the IP is rejected on a cheap map lookup.
+    JailDuration: 5 * time.Minute,
+    // Bearer-authed machine endpoints and assets bypass everything.
+    ExcludePaths: []string{"/api/", "/assets*"},
     OnDetection: func(r *http.Request, d botdetect.Detection) {
         log.Printf("bot: %s class=%s path=%s", d.Name, d.Class, r.URL.Path)
+    },
+    OnJail: func(ip string, r *http.Request, d botdetect.Detection) {
+        log.Printf("jailed %s (%s) for %s", ip, d.Name, r.URL.Path)
     },
 })
 http.ListenAndServe(":8080", handler)
@@ -93,11 +101,20 @@ Mount it early in the chain, before routing — bots then never reach your
 handlers or analytics. Details:
 
 - Malicious paths (`.env`, `.git/`, `shell.php`, ...) are blocked regardless
-  of UA — disable via `DisableMaliciousPathBlock`.
+  of UA — disable via `DisableMaliciousPathBlock`. Stack-specific probes
+  (`wp`, `.php`, `cgi-bin`, `backup`, ...) come from `PathBlocklist`,
+  which defaults to `DefaultPathBlocklist()` — edit a copy of the
+  returned slice to exclude tokens (e.g. `/new`) or add your own.
+- `JailDuration` jails the client IP after any block decision;
+  `GetIP` customizes the jail key (default: `RemoteAddr` — supply an
+  X-Forwarded-For-aware func behind a trusted proxy). Jails are
+  in-process: they don't survive restarts or span replicas.
+- `ExcludePaths` bypasses every check including jails — keep assets
+  reachable for visitors on a jailed shared IP.
 - `/robots.txt` is never blocked (RFC 9309: a 4xx robots.txt means "no
   rules").
-- `ObserveOnly: true` detects + reports via `OnDetection` but never blocks —
-  good for a rollout phase.
+- `ObserveOnly: true` detects + reports via `OnDetection` but never blocks
+  or jails — good for a rollout phase.
 - `BlockResponse` customizes the rejection (default: 403 `Forbidden`).
 
 ## Pattern lists
