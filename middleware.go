@@ -52,6 +52,14 @@ type Options struct {
 	// implementation; note that trusting client-set headers lets an
 	// attacker jail arbitrary IPs, so only honor them from a known
 	// proxy chain.
+	//
+	// The inverse failure exists too: if every request arrives from a
+	// public-IP edge (e.g. a CDN's egress) and GetIP keys on RemoteAddr
+	// or a private-peer heuristic, one scanner jails the shared egress
+	// IP and every user behind it eats 403s for the jail term — a
+	// self-inflicted outage. Behind such an edge, GetIP must honor XFF
+	// from a configured trusted-proxy CIDR list (CDNs publish theirs),
+	// not just private ranges.
 	GetIP func(r *http.Request) string
 
 	// ObserveOnly detects and reports via OnDetection but never blocks

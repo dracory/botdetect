@@ -108,7 +108,11 @@ handlers or analytics. Details:
 - `JailDuration` jails the client IP after any block decision;
   `GetIP` customizes the jail key (default: `RemoteAddr` — supply an
   X-Forwarded-For-aware func behind a trusted proxy). Jails are
-  in-process: they don't survive restarts or span replicas.
+  in-process: they don't survive restarts or span replicas. Get the
+  key wrong either way and it hurts: trusting raw XFF lets anyone jail
+  arbitrary IPs, while keying on the proxy's own public egress IP
+  (e.g. behind a CDN) lets one scanner jail every user behind it —
+  honor XFF only from a known proxy CIDR list.
 - `ExcludePaths` bypasses every check including jails — keep assets
   reachable for visitors on a jailed shared IP.
 - `/robots.txt` is never blocked (RFC 9309: a 4xx robots.txt means "no
