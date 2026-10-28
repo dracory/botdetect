@@ -263,3 +263,11 @@ func TestWidget(t *testing.T) {
 		t.Error("empty action should omit the attribute")
 	}
 }
+
+func TestVerifyRejectsHTTPEndpoint(t *testing.T) {
+	v := New("s")
+	v.Endpoint = "http://example.com/siteverify"
+	if _, err := v.Verify(context.Background(), "tok", ""); err == nil {
+		t.Fatal("plain-http endpoint accepted")
+	}
+}

@@ -1,6 +1,16 @@
 package humanverify
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
+
+// ReplayStore optionally makes solved tokens single-use. CheckAndMark
+// must return false if the token was already redeemed, otherwise record
+// it (until expiresAt at the latest) and return true.
+type ReplayStore interface {
+	CheckAndMark(token string, expiresAt time.Time) bool
+}
 
 // Config controls the press-and-hold human verification gate.
 //
@@ -47,6 +57,18 @@ type Config struct {
 	// in production — including behind a TLS-terminating proxy, where
 	// r.TLS is always nil and cannot be used to detect HTTPS.
 	SecureCookie bool
+
+	// BindFunc overrides the default client binding (User-Agent +
+	// remote IP) embedded in tokens and pass cookies, so a solved
+	// pass cannot be replayed from a different client. Return a short
+	// stable fingerprint of the request — useful for /24 binding or
+	// trusted-proxy IP resolution. The returned value is embedded in
+	// dot-separated tokens and must not contain ".".
+	BindFunc func(r *http.Request) string
+
+	// Replay optionally enforces single-use tokens. Without it an
+	// issued token can mint pass cookies until its TokenTTL expires.
+	Replay ReplayStore
 }
 
 func (c *Config) defaults() {

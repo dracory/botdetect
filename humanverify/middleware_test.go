@@ -158,7 +158,8 @@ func TestTouchHoldWithZeroMovesPasses(t *testing.T) {
 func TestExpiredTokenRejected(t *testing.T) {
 	cfg := testConfig()
 	cfg.Secret = []byte("test-secret")
-	payload := "AAAAAAAAAAAAAAAAAAAAAA." + "1000000000" // 2001
+	r := verifyRequest(nil)
+	payload := "AAAAAAAAAAAAAAAAAAAAAA." + "1000000000." + cfg.bind(r) // 2001
 	token := payload + "." + cfg.sign("tok|"+payload)
 	v := validForm(t, cfg, map[string]string{"token": token})
 	rec := hit(t, cfg, verifyRequest(v))
@@ -170,8 +171,70 @@ func TestExpiredTokenRejected(t *testing.T) {
 func TestPassCookieExpiry(t *testing.T) {
 	cfg := testConfig()
 	cfg.CookieTTL = time.Hour
-	val := cfg.issuePass(time.Now().Add(-2 * time.Hour)) // already expired
-	if cfg.verifyPassValue(val, time.Now()) {
+	r := httptest.NewRequest("GET", "/mirror", nil)
+	val := cfg.issuePass(time.Now().Add(-2*time.Hour), r) // already expired
+	if cfg.verifyPassValue(val, time.Now(), r) {
 		t.Fatal("expired pass accepted")
 	}
+}
+
+func TestPassCookieBoundToClient(t *testing.T) {
+	cfg := testConfig()
+
+	// Solve from one client.
+	rec := hit(t, cfg, verifyRequest(validForm(t, cfg, nil)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("verify status = %d", rec.Code)
+	}
+	var pass *http.Cookie
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == cfg.CookieName {
+			pass = c
+		}
+	}
+	if pass == nil {
+		t.Fatal("no pass cookie issued")
+	}
+
+	// Same cookie from a different client (other IP) must not pass.
+	r := httptest.NewRequest("GET", "/mirror", nil)
+	r.RemoteAddr = "203.0.113.9:5555"
+	r.AddCookie(pass)
+	if rec2 := hit(t, cfg, r); rec2.Code == http.StatusTeapot {
+		t.Fatal("pass cookie replayed from a different client")
+	}
+
+	// Same client still passes.
+	r2 := httptest.NewRequest("GET", "/mirror", nil)
+	r2.AddCookie(pass)
+	if rec3 := hit(t, cfg, r2); rec3.Code != http.StatusTeapot {
+		t.Fatalf("pass cookie rejected for original client: %d", rec3.Code)
+	}
+}
+
+func TestTokenSingleUseWithReplayStore(t *testing.T) {
+	cfg := testConfig()
+	used := map[string]bool{}
+	cfg.Replay = replayFunc(func(token string, _ time.Time) bool {
+		if used[token] {
+			return false
+		}
+		used[token] = true
+		return true
+	})
+
+	v := validForm(t, cfg, nil)
+	if rec := hit(t, cfg, verifyRequest(v)); rec.Code != http.StatusOK {
+		t.Fatalf("first solve status = %d", rec.Code)
+	}
+	// Reusing the same token must fail.
+	if rec := hit(t, cfg, verifyRequest(v)); rec.Code != http.StatusForbidden {
+		t.Fatalf("replayed token accepted: %d", rec.Code)
+	}
+}
+
+type replayFunc func(token string, expiresAt time.Time) bool
+
+func (f replayFunc) CheckAndMark(token string, expiresAt time.Time) bool {
+	return f(token, expiresAt)
 }

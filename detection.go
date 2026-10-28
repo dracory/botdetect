@@ -47,11 +47,12 @@ func Detect(userAgent string) Detection {
 	if userAgent == "" {
 		return Detection{}
 	}
-	if d, ok := uaCache.get(userAgent); ok {
+	key := cacheKey(userAgent)
+	if d, ok := uaCache.get(key); ok {
 		return d
 	}
 	d := detectImpl(userAgent, strings.ToLower(userAgent), nil)
-	uaCache.set(userAgent, d)
+	uaCache.set(key, d)
 	return d
 }
 

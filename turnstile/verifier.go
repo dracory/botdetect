@@ -54,9 +54,16 @@ func New(secret string) *Verifier {
 // Verify returns a non-nil error only for transport/decoding failures
 // (and ErrMissingToken). A rejected token is Result.Success == false,
 // not an error.
+//
+// The endpoint must be HTTPS — plain HTTP would send the site secret
+// and client tokens in cleartext. HTTP is accepted only for loopback
+// hosts (localhost, 127.0.0.1, ::1) so tests can use httptest servers.
 func (v *Verifier) Verify(ctx context.Context, token, remoteIP string) (*Result, error) {
 	if token == "" {
 		return nil, ErrMissingToken
+	}
+	if err := checkEndpoint(v.Endpoint); err != nil {
+		return nil, err
 	}
 	form := url.Values{"secret": {v.Secret}, "response": {token}}
 	if remoteIP != "" {
@@ -80,4 +87,23 @@ func (v *Verifier) Verify(ctx context.Context, token, remoteIP string) (*Result,
 		return nil, err
 	}
 	return &res, nil
+}
+
+// checkEndpoint rejects endpoints that would send the site secret in
+// cleartext. HTTP is allowed only for loopback hosts (tests).
+func checkEndpoint(endpoint string) error {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+	if u.Scheme == "https" {
+		return nil
+	}
+	if u.Scheme == "http" {
+		switch u.Hostname() {
+		case "localhost", "127.0.0.1", "::1":
+			return nil
+		}
+	}
+	return errors.New("turnstile: endpoint must be https (http allowed only for loopback hosts)")
 }

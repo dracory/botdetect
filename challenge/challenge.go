@@ -71,7 +71,9 @@ type Config struct {
 
 	// BindFunc overrides the default client binding (User-Agent +
 	// remote IP). Return a short stable fingerprint of the request.
-	// Useful for /24 binding or trusted-proxy IP resolution.
+	// Useful for /24 binding or trusted-proxy IP resolution. The
+	// returned value is embedded in dot-separated tokens and must
+	// not contain ".".
 	BindFunc func(r *http.Request) string
 
 	// Replay optionally enforces single-use tokens.

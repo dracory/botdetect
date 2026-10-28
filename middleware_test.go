@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 var testUA = map[string]string{
@@ -163,5 +164,29 @@ func TestMiddleware_ExcludeWinsOverInclude(t *testing.T) {
 	h.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
 		t.Errorf("path in both include and exclude got %d, expected 200 (exclude wins)", w.Code)
+	}
+}
+
+func TestMiddleware_EmptyIPNotJailed(t *testing.T) {
+	code := 0
+	h := Middleware(serve(&code), Options{
+		JailDuration: time.Minute,
+		GetIP:        func(*http.Request) string { return "" },
+	})
+	// Bot request is blocked, but must not jail the shared "" bucket.
+	r := httptest.NewRequest("GET", "/page", nil)
+	r.Header.Set("User-Agent", testUA["scraper"])
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("bot request got %d, expected 403", w.Code)
+	}
+	// A subsequent human request must still pass — "" is unjailable.
+	r2 := httptest.NewRequest("GET", "/page", nil)
+	r2.Header.Set("User-Agent", testUA["browser"])
+	w2 := httptest.NewRecorder()
+	h.ServeHTTP(w2, r2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("human request blocked via empty-IP jail: %d", w2.Code)
 	}
 }

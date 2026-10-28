@@ -125,7 +125,7 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r == nil {
-			next.ServeHTTP(w, r)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
 
@@ -145,17 +145,21 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 			return
 		}
 
-		var ip string
+		// An empty resolved IP is treated as unjailable: jailing ""
+		// would block every client whose IP fails to resolve.
+		ip := ""
 		if jail != nil {
 			ip = getIP(r)
-			if jail.jailed(ip) {
-				d := Detection{Bot: true, Name: "jailed", Class: ClassScanner}
-				if opts.OnDetection != nil {
-					opts.OnDetection(r, d)
-				}
-				block(w, r)
-				return
+		}
+		jailable := jail != nil && ip != ""
+
+		if jailable && jail.jailed(ip) {
+			d := Detection{Bot: true, Name: "jailed", Class: ClassScanner}
+			if opts.OnDetection != nil {
+				opts.OnDetection(r, d)
 			}
+			block(w, r)
+			return
 		}
 
 		if !opts.DisableMaliciousPathBlock &&
@@ -165,7 +169,7 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 				opts.OnDetection(r, d)
 			}
 			if !opts.ObserveOnly {
-				if jail != nil && jail.jail(ip) && opts.OnJail != nil {
+				if jailable && jail.jail(ip) && opts.OnJail != nil {
 					opts.OnJail(ip, r, d)
 				}
 				block(w, r)
@@ -180,7 +184,7 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 			}
 			allowed := opts.AllowedClasses[d.Class]
 			if !allowed && !opts.ObserveOnly {
-				if jail != nil && jail.jail(ip) && opts.OnJail != nil {
+				if jailable && jail.jail(ip) && opts.OnJail != nil {
 					opts.OnJail(ip, r, d)
 				}
 				block(w, r)

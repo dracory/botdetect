@@ -34,7 +34,7 @@ func (c Config) Middleware(next http.Handler) http.Handler {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		token, err := cfg.issueToken()
+		token, err := cfg.issueToken(r)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -78,7 +78,7 @@ func (c Config) handleVerify(w http.ResponseWriter, r *http.Request) {
 		fail("Verification failed")
 		return
 	}
-	if err := c.verifyToken(r.PostForm.Get("token"), time.Now()); err != nil {
+	if err := c.verifyToken(r.PostForm.Get("token"), time.Now(), r); err != nil {
 		fail("Verification failed")
 		return
 	}
@@ -120,7 +120,7 @@ func (c Config) handleVerify(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     c.CookieName,
-		Value:    c.issuePass(time.Now()),
+		Value:    c.issuePass(time.Now(), r),
 		Path:     "/",
 		Expires:  time.Now().Add(c.CookieTTL),
 		HttpOnly: true,

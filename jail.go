@@ -7,8 +7,9 @@ import (
 
 // jailStore is a small bounded in-memory IP jail. Entries expire lazily
 // on read; when the map is full, expired entries are swept and — as a
-// last resort — the map is cleared entirely, so a botnet rotating IPs
-// can't grow it unbounded. Same strategy as detectionCache.
+// last resort — a bounded slice is evicted (random map order), so a
+// botnet rotating IPs degrades jailing slightly instead of un-jailing
+// every offender at once. Same strategy as detectionCache.
 //
 // The store is per-process: jails do not survive restarts and are not
 // shared across replicas. That is deliberate — a jail is a short-lived
@@ -57,7 +58,13 @@ func (s *jailStore) jail(ip string) bool {
 			}
 		}
 		if len(s.entries) >= jailStoreSize {
-			clear(s.entries)
+			n := jailStoreSize / 8
+			for k := range s.entries {
+				delete(s.entries, k)
+				if n--; n <= 0 {
+					break
+				}
+			}
 		}
 	}
 	until, ok := s.entries[ip]
