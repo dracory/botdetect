@@ -167,12 +167,13 @@ func isAlphaNum(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }
 
-// matchesExcludedPath reports whether path bypasses the middleware
-// entirely. A trailing '*' in a pattern means prefix match
-// ("/assets*" matches "/assets/style.css"); without '*' the pattern is
-// segment-aware: it matches the path exactly or any subpath starting
-// with pattern + "/" ("/api" matches "/api/users", not "/apix").
-func matchesExcludedPath(path string, patterns []string) bool {
+// matchesPathScope reports whether path matches any pattern in the
+// IncludePaths/ExcludePaths syntax: a trailing '*' in a pattern means
+// prefix match ("/assets*" matches "/assets/style.css"); without '*'
+// the pattern is segment-aware: it matches the path exactly or any
+// subpath starting with pattern + "/" ("/api" matches "/api/users",
+// not "/apix").
+func matchesPathScope(path string, patterns []string) bool {
 	for _, pattern := range patterns {
 		if pattern == "" {
 			continue

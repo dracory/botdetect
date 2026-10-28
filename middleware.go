@@ -28,6 +28,14 @@ type Options struct {
 	// Ignored when DisableMaliciousPathBlock is true.
 	PathBlocklist []string
 
+	// IncludePaths scopes every check — detection, blocking, and
+	// jails — to matching request paths only; all other paths pass
+	// untouched. Empty (default) means every path is in scope. Same
+	// pattern syntax as ExcludePaths. Useful when the gated set is
+	// narrower than the exempt set (e.g. only "/account/*" and
+	// "/checkout/*"). When a path matches both lists, ExcludePaths wins.
+	IncludePaths []string
+
 	// ExcludePaths bypasses every check — detection, blocking, and
 	// jails — for matching request paths. A trailing '*' means prefix
 	// match; otherwise the pattern is segment-aware (exact path or
@@ -88,10 +96,10 @@ type Options struct {
 // crawl restrictions", so blocking it would tell crawlers everything is
 // allowed.
 //
-// Evaluation order: ExcludePaths → robots.txt → jailed-IP check →
-// malicious paths (IsMaliciousPath + PathBlocklist) → UA detection.
-// Any block decision jails the client IP when JailDuration > 0;
-// ObserveOnly never blocks or jails.
+// Evaluation order: IncludePaths → ExcludePaths → robots.txt →
+// jailed-IP check → malicious paths (IsMaliciousPath + PathBlocklist)
+// → UA detection. Any block decision jails the client IP when
+// JailDuration > 0; ObserveOnly never blocks or jails.
 func Middleware(next http.Handler, opts Options) http.Handler {
 	block := opts.BlockResponse
 	if block == nil {
@@ -121,7 +129,12 @@ func Middleware(next http.Handler, opts Options) http.Handler {
 			return
 		}
 
-		if matchesExcludedPath(r.URL.Path, opts.ExcludePaths) {
+		if len(opts.IncludePaths) > 0 && !matchesPathScope(r.URL.Path, opts.IncludePaths) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if matchesPathScope(r.URL.Path, opts.ExcludePaths) {
 			next.ServeHTTP(w, r)
 			return
 		}

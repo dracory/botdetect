@@ -124,3 +124,44 @@ func TestMiddleware_ObserveOnly(t *testing.T) {
 		t.Error("OnDetection was not called")
 	}
 }
+
+func TestMiddleware_IncludePaths(t *testing.T) {
+	code := 0
+	h := Middleware(serve(&code), Options{
+		IncludePaths: []string{"/account*"},
+	})
+
+	// Bot on an included path: blocked.
+	r := httptest.NewRequest("GET", "/account/settings", nil)
+	r.Header.Set("User-Agent", testUA["scraper"])
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("scraper on included path got %d, expected 403", w.Code)
+	}
+
+	// Same bot on a path outside the scope: passes — the wall does not
+	// apply there at all (no detection, no blocking).
+	r2 := httptest.NewRequest("GET", "/public/page", nil)
+	r2.Header.Set("User-Agent", testUA["scraper"])
+	w2 := httptest.NewRecorder()
+	h.ServeHTTP(w2, r2)
+	if w2.Code != http.StatusOK {
+		t.Errorf("scraper outside include scope got %d, expected 200", w2.Code)
+	}
+}
+
+func TestMiddleware_ExcludeWinsOverInclude(t *testing.T) {
+	code := 0
+	h := Middleware(serve(&code), Options{
+		IncludePaths: []string{"/api*"},
+		ExcludePaths: []string{"/api/health"},
+	})
+	r := httptest.NewRequest("GET", "/api/health", nil)
+	r.Header.Set("User-Agent", testUA["scraper"])
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Errorf("path in both include and exclude got %d, expected 200 (exclude wins)", w.Code)
+	}
+}

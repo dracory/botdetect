@@ -114,7 +114,9 @@ handlers or analytics. Details:
   (e.g. behind a CDN) lets one scanner jail every user behind it —
   honor XFF only from a known proxy CIDR list.
 - `ExcludePaths` bypasses every check including jails — keep assets
-  reachable for visitors on a jailed shared IP.
+  reachable for visitors on a jailed shared IP. `IncludePaths` does
+  the inverse: when set, only matching paths are gated at all (e.g.
+  just `/account/*`); on overlap, exclusions win.
 - `/robots.txt` is never blocked (RFC 9309: a 4xx robots.txt means "no
   rules").
 - `ObserveOnly: true` detects + reports via `OnDetection` but never blocks
