@@ -145,6 +145,14 @@ botdetect.MaliciousPathPatterns() // malicious path patterns
   [docs/maintaining-data.md](docs/maintaining-data.md) for how to update the
   detection lists and refresh the CIDR ranges.
 
+## Human verification subpackages
+
+In addition to static bot detection, `botdetect` provides interactive human verification packages:
+- `challenge`: Stateless proof-of-work (PoW) computation in a Web Worker.
+- `humanverify`: Press-and-hold challenge tracking duration and pointer jitter.
+- `sliderverify`: Slide-to-verify challenge evaluating motor kinematics (Fitts's Law velocity profiles, orthogonal micro-tremors, target accuracy, duration bounds).
+- `turnstile`: Cloudflare Turnstile verifier and middleware.
+
 ## License
 
 AGPL-3.0 — see [LICENSE](LICENSE).
