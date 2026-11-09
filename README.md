@@ -145,6 +145,34 @@ botdetect.MaliciousPathPatterns() // malicious path patterns
   [docs/maintaining-data.md](docs/maintaining-data.md) for how to update the
   detection lists and refresh the CIDR ranges.
 
+## Human verification subpackages
+
+In addition to static bot detection, `botdetect` provides interactive human verification subpackages to defend expensive anonymous routes, API endpoints, and form submissions:
+
+### 1. Slider verification (`sliderverify`)
+Slide-to-verify challenge evaluating biological motor control kinematics. Verifies Fitts's Law velocity profiles (bell curves), orthogonal micro-tremors (Y-jitter), target accuracy, and realistic durations to reject bots and synthetic scripts.
+- Example: [`examples/sliderverify/`](examples/sliderverify/)
+
+![Slider Verify](docs/images/sliderverify.png)
+
+### 2. Press-and-hold verification (`humanverify`)
+A tactile speed bump requiring visitors to press and hold a button. Collects duration, pointer movement counts, and micro-jitter.
+- Example: [`examples/humanverify/`](examples/humanverify/)
+
+![Human Verify](docs/images/humanverify.png)
+
+### 3. Stateless Proof-of-Work (`challenge`)
+A stateless HMAC-signed proof-of-work challenge ("poor man's Turnstile"). An embedded Web Worker computes a SHA-256 hash collision with leading zero bits to throttle automated scrapers without external dependencies.
+- Example: [`examples/challenge/`](examples/challenge/)
+
+![PoW Challenge](docs/images/challenge.png)
+
+### 4. Cloudflare Turnstile (`turnstile`)
+Drop-in client and HTTP middleware for Cloudflare Turnstile verification. Includes form widget helpers and conditional friction (`OnlyIfSuspicious`).
+- Example: [`examples/turnstile/`](examples/turnstile/)
+
+![Turnstile](docs/images/turnstile.png)
+
 ## License
 
 AGPL-3.0 — see [LICENSE](LICENSE).
